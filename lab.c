@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	int fileout;
 	int key;
 	pid_t pid;
+	int oflags = O_RDWR | O_CREAT | O_TRUNC;
 
 	if (argc < 3 || argc > 3) {
 		strcpy(str, "Wrong number of arguments\n");
@@ -66,8 +67,6 @@ int main(int argc, char *argv[])
 	close(pipes[INPUTFILE][0]);
 	close(pipes[INPUTFILE][1]);
 	if (strcmp(argv[1], "crypt") == 0) {
-		int oflags = O_RDWR | O_CREAT | O_TRUNC;
-
 		fileout = open("fileout", oflags, S_IWUSR | S_IRUSR);
 		key = open("key", oflags, S_IWUSR | S_IRUSR);
 		if (fileout == -1 || key == -1) {
@@ -113,7 +112,8 @@ int main(int argc, char *argv[])
 				exit(2);
 			}
 		}
-		fileout = open("filesrc", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+		fileout = open("filesrc", oflags, S_IRUSR | S_IWUSR);
 		if (fileout == -1) {
 			strcpy(str, "File open error\n");
 			write(2, str, strlen(str));
