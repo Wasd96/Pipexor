@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <time.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
 		write(2, str, strlen(str));
 		exit(1);
 	}
+	srand(time(NULL));
 
 
 	pid = fork();
@@ -64,8 +66,10 @@ int main(int argc, char *argv[])
 	close(pipes[INPUTFILE][0]);
 	close(pipes[INPUTFILE][1]);
 	if (strcmp(argv[1], "crypt") == 0) {
-		fileout = open("fileout", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-		key = open("key", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+		int oflags = O_RDWR | O_CREAT | O_TRUNC;
+
+		fileout = open("fileout", oflags, S_IWUSR | S_IRUSR);
+		key = open("key", oflags, S_IWUSR | S_IRUSR);
 		if (fileout == -1 || key == -1) {
 			strcpy(str, "File open error\n");
 			write(2, str, strlen(str));
