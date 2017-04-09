@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <time.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -10,11 +9,6 @@
 #define uchar unsigned char
 #define INPUTFILE 0
 #define KEYFILE 1
-
-uchar getrandombyte(void)
-{
-	return random() % 256;
-}
 
 int main(int argc, char *argv[])
 {
@@ -42,8 +36,6 @@ int main(int argc, char *argv[])
 		write(2, str, strlen(str));
 		exit(1);
 	}
-	srand(time(NULL));
-
 
 	pid = fork();
 	if (pid == -1) {
@@ -67,26 +59,38 @@ int main(int argc, char *argv[])
 	close(pipes[INPUTFILE][0]);
 	close(pipes[INPUTFILE][1]);
 	if (strcmp(argv[1], "crypt") == 0) {
+		int entropy;
+
 		fileout = open("fileout", oflags, S_IWUSR | S_IRUSR);
 		key = open("key", oflags, S_IWUSR | S_IRUSR);
-		if (fileout == -1 || key == -1) {
+		entropy = open("/dev/urandom", O_RDONLY);
+		if (fileout == -1 || key == -1 || entropy == -1) {
 			strcpy(str, "File open error\n");
 			write(2, str, strlen(str));
 			exit(3);
 		}
 		while (nread = read(0, buff, LENGTH)) {
 			uchar crypted;
+			uchar randbuff[LENGTH];
 			uchar randbyte;
+			int nreadkey;
 
+			nreadkey = read(entropy, randbuff, nread);
+			if (nreadkey < nread) {
+				strcpy(str, "Random read error\n");
+				write(2, str, strlen(str));
+				exit(4);
+			}
 			for (i = 0; i < nread; i++) {
-				randbyte = getrandombyte();
+				randbyte = randbuff[i] & 0xFF;
 				crypted = buff[i] ^ randbyte;
-				write(fileout, &crypted, 1);
+				write(fileout, &crypted, 1); 
 				write(key, &randbyte, 1);
 			}
 		}
 		close(fileout);
 		close(key);
+		close(entropy);
 	} else if (strcmp(argv[1], "encrypt") == 0) {
 		key = open("key", O_RDONLY);
 		if (key == -1) {
